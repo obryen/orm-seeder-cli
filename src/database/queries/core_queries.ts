@@ -16,26 +16,26 @@ export function getTableMetadataQuery(tableName: string, schemaName = 'public') 
     CASE 
         WHEN tc.constraint_type = 'PRIMARY KEY' THEN true
         ELSE false
-    END AS isPrimary,
+    END AS "isPrimary",
     CASE 
         WHEN c.is_nullable = 'YES' THEN true
         ELSE false
-    END AS isNullable,
+    END AS "isNullable",
     CASE 
         WHEN c.is_generated = 'ALWAYS' THEN true
         ELSE false
-    END AS isGenerated,
+    END AS "isGenerated",
     c.column_default AS default,
     c.character_maximum_length AS length,
     c.numeric_precision AS precision,
     c.numeric_scale AS scale,
-    fk.referenced_table_name AS referencedTable,
-    fk.referenced_column_name AS referencedColumn,
+    fk.referenced_table_name AS "referencedTable",
+    fk.referenced_column_name AS "referencedColumn",
     pgd.description AS comment,
     CASE 
         WHEN fk.referenced_table_name IS NOT NULL THEN 'FOREIGN KEY'
         ELSE NULL
-    END AS relationType
+    END AS "relationType"
 FROM 
     information_schema.columns c
 LEFT JOIN 
@@ -77,7 +77,7 @@ LEFT JOIN
             WHERE nspname = c.table_schema
         )
     )
-WHERE 
+    WHERE
     c.table_name = $1
     AND c.table_schema = $2;`
     }

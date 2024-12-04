@@ -105,11 +105,11 @@ export class DatabaseSeedService {
 
             const query = getTableMetadataQuery(tableName, schemaName);
             const rawQueryText = query.text.replace(/\s+/g, ' ').trim();
-            const result = await this.dataSource.query(rawQueryText, [query.values]);
+            const result = await this.dataSource.query(rawQueryText, query.values);
 
             // Check if metadata and columns are available
             const columns = result.map((column) => ({
-                name: column.propertyName || null,
+                name: column.name || null,
                 type: column.type || null,
                 isPrimary: column.isPrimary || false,
                 isNullable: column.isNullable || false,
