@@ -1,36 +1,45 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import * as fs from 'fs'
+import { Inject, Injectable, InternalServerErrorException } from "@nestjs/common";
 import axios, { AxiosInstance } from 'axios';
-import { ColumnMetadata, DatabaseSchema } from "src/database/models/database-schema";
+import { DatabaseSeedService } from "../database/database.seed.service";
+import { join } from 'path';
 
 @Injectable()
 export class AIService {
     private axiosInstance: AxiosInstance;
 
-    constructor() {
-            this.axiosInstance = axios.create({
-                baseURL: 'https://api.openai.com/v1',
-                headers: {
-                    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-    
+    constructor(@Inject() private seedService: DatabaseSeedService) {
+        this.axiosInstance = axios.create({
+            baseURL: 'https://api.openai.com/v1',
+            headers: {
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
     }
 
-    async generateSeedData(schema: DatabaseSchema, rules: Record<string, any>): Promise<Record<string, any[]>> {
-        const seedData: Record<string, any[]> = {};
-        for (const [tableName, columns] of Object.entries(schema)) {
-            const tableData = await this.callOpenAI(tableName, columns, rules);
-            seedData[tableName] = tableData;
-        }
-        return seedData;
+    async generateSeedData(): Promise<any> {
+
+        const schema = await this.seedService.introspectSchema()
+
+        const seedData = await this.callOpenAI(JSON.stringify(schema));
+        const sqlContent = Array.isArray(seedData) ? seedData.join('\n') : seedData;
+
+        const filePath = join(__dirname, 'seed_data.sql');
+
+        await fs.writeFileSync(filePath, sqlContent);
+
+        console.log(`Seed data written to: ${filePath}`);
+        return true;
+
     }
 
-    async callOpenAI(tableName: string, columns: ColumnMetadata[], rules: Record<string, any>): Promise<any[]> {
-        const prompt = this.createPrompt(tableName, columns, rules);
+    async callOpenAI(schema: string): Promise<any[]> {
+        const prompt = this.createPrompt(schema);
         const payload = {
-            model: 'text-davinci-003',
-            prompt,
+            model: 'gpt-3.5',
+            messages: [{ role: "system", content: "You are a database query writing expert." }, { role: "user", "content": prompt }],
             max_tokens: 1000,
         };
 
@@ -44,13 +53,12 @@ export class AIService {
         }
     }
 
-    private createPrompt(tableName: string, columns: ColumnMetadata[], rules: Record<string, any>): string {
-        return `
-      Generate realistic seed data for the table "${tableName}".
-      Schema:
-      ${columns.map(col => `${col.name} (${col.type})`).join('\n')}
-      Rules:
-      ${JSON.stringify(rules, null, 2)}
+    private createPrompt(schema: string): string {
+        const promptTxt = `
+      Generate realistic seed data insert queries for this schema "${schema}"
     `;
+
+        console.log('prompt', promptTxt)
+        return promptTxt;
     }
 }

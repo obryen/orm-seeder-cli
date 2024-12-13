@@ -95,7 +95,7 @@ export class DatabaseSeedService {
             );
 
         } catch (error) {
-            console.error("some shit aint right", error);
+            console.error("[introspectSchema] some shit aint right", error);
             return;
         }
 

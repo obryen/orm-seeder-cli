@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AIService } from 'src/intelligence/ai.service';
 import { ClassificationService } from 'src/classifications/classification.service';
+import { AIService } from 'src/intelligence/ai.service';
 
 // @Command({
 //     command: ['generate-seed-data'],
